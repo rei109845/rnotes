@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quick Notes</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="header glass">
+      <div class="title-wrap">
+        <h1>Quick Notes</h1>
+        <span class="badge">v2.0</span>
+      </div>
+
+      <div class="controls">
+        <div class="control">
+          <input id="search" type="search" placeholder="Search notes (title, content, category)"/>
+        </div>
+        <div class="control">
+          <select id="filterCategory" aria-label="Filter by category">
+            <option value="">All categories</option>
+            <option>Work</option>
+            <option>Personal</option>
+            <option>Ideas</option>
+            <option>School</option>
+            <option>Todo</option>
+          </select>
+        </div>
+        <div class="control">
+          <select id="filterFolder" aria-label="Filter by folder">
+            <option value="">All folders</option>
+          </select>
+        </div>
+        <div class="control">
+          <select id="sortBy" aria-label="Sort notes">
+            <option value="updatedDesc">Sort: Updated (newest)</option>
+            <option value="updatedAsc">Sort: Updated (oldest)</option>
+            <option value="createdDesc">Sort: Created (newest)</option>
+            <option value="createdAsc">Sort: Created (oldest)</option>
+            <option value="titleAsc">Sort: Title (A–Z)</option>
+            <option value="titleDesc">Sort: Title (Z–A)</option>
+            <option value="pinnedFirst">Sort: Pinned first</option>
+          </select>
+        </div>
+        <div class="control toggle-wrap">
+          <label class="switch" title="Toggle dark mode">
+            <input id="darkToggle" type="checkbox" />
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label">Dark</span>
+        </div>
+        <div class="control">
+          <label class="color-picker">
+            <span>Theme</span>
+            <input id="themeColor" type="color" value="#7c3aed" />
+          </label>
+        </div>
+        <button id="manageFolders" class="btn secondary" title="Manage folders">Folders</button>
+        <button id="clearAll" class="btn danger" title="Clear all notes">Clear All</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="composer glass">
+        <form id="noteForm">
+          <div class="row">
+            <input id="title" type="text" placeholder="Note title" required minlength="1" maxlength="120"/>
+            <div class="form-group">
+              <select id="category" required>
+                <option value="" disabled selected>Category</option>
+                <option>Work</option>
+                <option>Personal</option>
+                <option>Ideas</option>
+                <option>School</option>
+                <option>Todo</option>
+              </select>
+              <select id="folder">
+                <option value="">No folder</option>
+              </select>
+            </div>
+          </div>
+          <textarea id="content" rows="6" placeholder="Write your note..." required></textarea>
+          <div class="actions">
+            <button id="saveNote" class="btn primary" type="submit">Save Note</button>
+            <button id="resetForm" class="btn ghost" type="button">Reset</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="notes-wrap">
+        <div id="folderNav" class="folder-nav">
+          <span class="folder-nav-label">Folders:</span>
+          <div id="folderList" class="folder-list"></div>
+        </div>
+        <div id="emptyState" class="empty glass" hidden>
+          <p>No notes yet. Start by writing something above ✍️</p>
+        </div>
+        <div id="notesGrid" class="notes-grid"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Made with ❤ — Local & private (stored in your browser)</p>
+    </footer>
+  </div>
+
+  <template id="noteCardTemplate">
+    <article class="note glass" data-id="">
+      <header class="note-head">
+        <div class="left">
+          <span class="pin" title="Pinned">📌</span>
+          <h3 class="note-title"></h3>
+        </div>
+        <div class="right">
+          <span class="chip category"></span>
+          <span class="chip folder" title="Folder"></span>
+        </div>
+      </header>
+      <div class="note-body">
+        <p class="note-content"></p>
+      </div>
+      <footer class="note-foot">
+        <span class="stamp" title="Created / Updated time"></span>
+        <div class="note-actions">
+          <button class="btn tiny ghost pin-btn" title="Pin/Unpin">Pin</button>
+          <button class="btn tiny ghost move-btn" title="Move to folder">Move</button>
+          <button class="btn tiny ghost edit-btn" title="Edit">Edit</button>
+          <button class="btn tiny danger del-btn" title="Delete">Delete</button>
+        </div>
+      </footer>
+    </article>
+  </template>
+
+  <template id="folderNavItemTemplate">
+    <button class="folder-nav-item" data-id="">
+      <span class="folder-name"></span>
+      <span class="note-count"></span>
+    </button>
+  </template>
+
+  <!-- Save Note Confirmation Modal -->
+  <div id="saveNoteModal" class="modal-overlay" hidden>
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h2>Note Saved Successfully!</h2>
+        <button class="modal-close-btn btn tiny ghost" title="Close">✖</button>
+      </div>
+      <div class="modal-body">
+        <div class="saved-note-preview">
+          <h3 id="savedNoteTitle" class="saved-note-title"></h3>
+          <div class="saved-note-meta">
+            <span id="savedNoteCategory" class="chip"></span>
+            <span id="savedNoteFolder" class="chip folder"></span>
+          </div>
+          <p id="savedNoteContent" class="saved-note-content"></p>
+          <div class="saved-note-actions">
+            <button id="viewNewNote" class="btn primary">View Note</button>
+            <button id="closeSaveModal" class="btn ghost">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Note View Modal -->
+  <div id="noteModal" class="modal-overlay" hidden>
+    <div class="modal-content glass">
+      <button class="modal-close-btn btn tiny ghost" title="Close">✖</button>
+      <h2 id="modalNoteTitle" class="modal-title"></h2>
+      <div class="modal-meta">
+        <span id="modalNoteCategory" class="chip category"></span>
+        <span id="modalNoteFolder" class="chip folder"></span>
+        <span id="modalNoteCreated" class="stamp"></span>
+      </div>
+      <div class="modal-body">
+        <p id="modalNoteContent" class="modal-content-text"></p>
+      </div>
+      <span id="modalNoteUpdated" class="stamp modal-updated-stamp"></span>
+    </div>
+  </div>
+
+  <!-- Folder Management Modal -->
+  <div id="folderModal" class="modal-overlay" hidden>
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h2>Manage Folders</h2>
+        <button class="modal-close-btn btn tiny ghost" title="Close">✖</button>
+      </div>
+      <div class="modal-body">
+        <form id="folderForm" class="folder-form">
+          <input type="text" id="folderName" placeholder="New folder name" required minlength="1" maxlength="30"/>
+          <button type="submit" class="btn primary">Create Folder</button>
+        </form>
+        <div id="foldersList" class="folders-list">
+          <h3>Your Folders</h3>
+          <div id="folderItems" class="folder-items"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Move Note Modal -->
+  <div id="moveNoteModal" class="modal-overlay" hidden>
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h2>Move Note</h2>
+        <button class="modal-close-btn btn tiny ghost" title="Close">✖</button>
+      </div>
+      <div class="modal-body">
+        <p>Select folder for this note:</p>
+        <select id="moveFolderSelect">
+          <option value="">No folder</option>
+        </select>
+        <div class="modal-actions">
+          <button id="confirmMove" class="btn primary">Move</button>
+          <button id="cancelMove" class="btn ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
